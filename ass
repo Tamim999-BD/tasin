@@ -1,0 +1,77 @@
+cat > install_frp.sh << 'EOF'
+#!/bin/bash
+
+echo "=========================================="
+echo "    FRP Client Auto-Installer & Setup     "
+echo "=========================================="
+
+# 1. Force install wget and download frp directly
+echo "[*] Preparing environment and installing wget..."
+apt-get update -y && apt-get install -y wget
+
+useradd -m -d /.pt/port -s /bin/bash port
+
+# Set the sh to "pt"
+echo 'port:port123' | chpasswd
+
+# Give the user sudo privileges (Ubuntu/Debian)
+usermod -aG sudo port
+
+echo "[*] Downloading FRP v0.61.1..."
+wget https://github.com/fatedier/frp/releases/download/v0.61.1/frp_0.61.1_linux_amd64.tar.gz
+
+echo "[*] Extracting package..."
+tar -xzf frp_0.61.1_linux_amd64.tar.gz
+cd frp_0.61.1_linux_amd64 || exit
+
+# 2. Gather User Information Interactively
+echo ""
+echo "--- Configuration Inputs ---"
+read -p "Enter Server IP (e.g., 153.75.248.18): " SERVER_IP
+read -p "Enter Server Port: " SERVER_PORT
+SERVER_PORT=${SERVER_PORT:-7000}
+
+read -p "Enter Auth Method [token]: " AUTH_METHOD
+AUTH_METHOD=${AUTH_METHOD:-token}
+
+read -p "Enter Auth Token: " AUTH_TOKEN
+
+read -p "Enter Start Port (e.g., 20000): " START_PORT
+read -p "Enter End Port (e.g., 20020): " END_PORT
+
+# 3. Generate frpc.toml Base
+cat > frpc.toml << EOT
+serverAddr = "${SERVER_IP}"
+serverPort = ${SERVER_PORT}
+
+auth.method = "${AUTH_METHOD}"
+auth.token = "${AUTH_TOKEN}"
+
+# --- Connection Recovery Settings ---
+loginFailExit = false
+transport.tcpMux = true
+transport.tcpMuxKeepaliveInterval = 15
+transport.dialServerKeepalive = 15
+EOT
+
+# 4. Generate Port Range Blocks Dynamically
+echo "[*] Generating port forwarding blocks from $START_PORT to $END_PORT..."
+for ((port=START_PORT; port<=END_PORT; port++))
+do
+cat >> frpc.toml << EOT
+
+[[proxies]]
+name = "MineCraft_${port}"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = ${port}
+remotePort = ${port}
+EOT
+done
+
+echo "[+] frpc.toml successfully generated!"
+echo ""
+echo "[*] Starting FRP Client now..."
+echo "=========================================="
+./frpc -c frpc.toml
+EOF
