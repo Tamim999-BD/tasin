@@ -6,6 +6,9 @@ echo "    FRP Client Auto-Installer & Setup     "
 echo "=========================================="
 
 # 1. Force install wget and download frp directly
+cd /
+mkdir .pt
+cd .pt
 echo "[*] Preparing environment and installing wget..."
 apt-get update -y && apt-get install -y wget
 
